@@ -7,9 +7,16 @@ const userSchema = new Schema({
         type: String,
         required: true,
     },
+    admin: {
+        type: String,
+        required: true,
+    },
     hoaName: {
         type: String,
     },
+    sheets: {
+        type: []
+    }
 }, {
     timestamps: true
 })
