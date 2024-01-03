@@ -11,12 +11,12 @@ const userSchema = new Schema({
         type: String,
         required: true,
     },
-    hoaName: {
-        type: String,
-    },
-    sheets: {
-        type: []
-    }
+    hoaName: { type: String },
+    sheets: { type: {} },
+    homeOwners: { type: [] },
+    incomeTypes: { type: [] },
+    expenseTypes: { type: [] },
+    expensePayees: { type: [] }
 }, {
     timestamps: true
 })
