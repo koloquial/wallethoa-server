@@ -191,8 +191,31 @@ router.route('/add/note').post((req, res) => {
 });
 
 //update note
-//add note
 router.route('/update/note').post((req, res) => {
+    User.findOne({ uid: req.body.uid })
+    .then(account => {
+        //find correct sheet
+        for(let i = 0; i < account.sheets.length; i++){
+            if(account.sheets[i].name === req.body.sheet.name){
+                //sheet found
+                //type of note
+                if(req.body.type === 'income'){
+                    //find deposit
+                    account.sheets[i].income[req.body.depositIndex].notes[req.body.noteIndex] = req.body.item;
+                    break;
+                }
+            }
+        }
+
+        account.markModified("sheets");
+        account.save()
+        .then(() => res.json(account))
+        .catch(err => res.status(400).json('Error: ' + err))
+    })
+});
+
+//delete note
+router.route('/delete/note').post((req, res) => {
     User.findOne({ uid: req.body.uid })
     .then(account => {
         //find correct sheet
