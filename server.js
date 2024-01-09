@@ -18,8 +18,13 @@ connection.once('open', () => {
     console.log(`Mongoose connection established.`)
 });
 
+
 const usersRouter = require('./routes/users');
 app.use('/users', usersRouter)
+
+app.get('/', (req, res) => {
+    res.send('Wallet HOA server')
+  })
 
 app.listen(port, () => {
     console.log(`Server online: ${port}`);
