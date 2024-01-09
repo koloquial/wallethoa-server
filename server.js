@@ -18,7 +18,6 @@ connection.once('open', () => {
     console.log(`Mongoose connection established.`)
 });
 
-
 const usersRouter = require('./routes/users');
 app.use('/users', usersRouter)
 
