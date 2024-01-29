@@ -15,8 +15,8 @@ const userSchema = new Schema({
     sheets: { type: {} },
     homeOwners: { type: [] },
     incomeTypes: { type: [] },
-    expenseTypes: { type: [] },
-    expensePayees: { type: [] }
+    expensesTypes: { type: [] },
+    expensesPayees: { type: [] }
 }, {
     timestamps: true
 })

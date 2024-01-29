@@ -27,8 +27,8 @@ router.route('/add-account').post((req, res) => {
         sheets: [],
         homeOwners: [],
         incomeTypes: [],
-        expenseCategories: [],
-        expensePayees: []
+        expensesTypes: [],
+        expensesPayees: []
     })
 
     newUser.save()
@@ -97,12 +97,14 @@ router.route('/add/home-owner').post((req, res) => {
     })
 });
 
-/*** INCOME ***/
-//add income type
-router.route('/add/income-type').post((req, res) => {
+/** TYPES **/
+// [income type, expense type, payee type]
+
+//add type 
+router.route('/add/type').post((req, res) => {
     User.findOne({ uid: req.body.uid })
     .then(account => {
-        account.incomeTypes.push(req.body.type)
+        account[req.body.type].push(req.body.item);
 
         account.save()
         .then(() => res.json(account))
@@ -110,11 +112,24 @@ router.route('/add/income-type').post((req, res) => {
     })
 });
 
-//update income type
-router.route('/update/income-type').post((req, res) => {
+//update type
+router.route('/update/type').post((req, res) => {
     User.findOne({ uid: req.body.uid })
     .then(account => {
-        account.incomeTypes[req.body.index] = req.body.type;
+        account[req.body.type][req.body.index] = req.body.item;
+
+        account.markModified(req.body.type);
+        account.save()
+        .then(() => res.json(account))
+        .catch(err => res.status(400).json('Error: ' + err))
+    })
+});
+
+//delete type
+router.route('/delete/type').post((req, res) => {
+    User.findOne({ uid: req.body.uid })
+    .then(account => {
+        account[req.body.type].splice(req.body.index, 1);
 
         account.save()
         .then(() => res.json(account))
@@ -122,44 +137,7 @@ router.route('/update/income-type').post((req, res) => {
     })
 });
 
-//delete income type
-router.route('/delete/income-type').post((req, res) => {
-    User.findOne({ uid: req.body.uid })
-    .then(account => {
-        account.incomeTypes.splice(req.body.index, 1);
-
-        account.save()
-        .then(() => res.json(account))
-        .catch(err => res.status(400).json('Error: ' + err))
-    })
-});
-
-//add deposit
-router.route('/add/deposit').post((req, res) => {
-    User.findOne({ uid: req.body.uid })
-    .then(account => {
-        //find correct sheet
-        for(let i = 0; i < account.sheets.length; i++){
-            if(account.sheets[i].name === req.body.sheet.name){
-                account.sheets[i].income.push({
-                    uid: req.body.uid,
-                    postDate: req.body.postDate,
-                    type: req.body.type,
-                    dateCreated: req.body.dateCreated,
-                    amount: req.body.amount,
-                    notes: [req.body.note]
-                })
-                break;
-            }
-        }
-
-        account.markModified("sheets");
-        account.save()
-        .then(() => res.json(account))
-        .catch(err => res.status(400).json('Error: ' + err))
-    })
-});
-
+/** NOTES  */
 //add note
 router.route('/add/note').post((req, res) => {
     User.findOne({ uid: req.body.uid })
@@ -168,17 +146,9 @@ router.route('/add/note').post((req, res) => {
         for(let i = 0; i < account.sheets.length; i++){
             if(account.sheets[i].name === req.body.sheet.name){
                 //sheet found
-                //type of note
-                if(req.body.type === 'income'){
-                    //find deposit
-                    for(let j = 0; j < account.sheets[i].income.length; j++){
-                        if(account.sheets[i].income[j].postDate === req.body.item.postDate){
-                            //found deposit, overwrite item;
-                            account.sheets[i].income[j] = req.body.item;
-                            break;
-                        }
-                    }
-                }
+                //replace note array item
+                //account > sheets[0] > income[0] > .notes.push
+                account.sheets[i][req.body.type][req.body.itemIndex].notes.push(req.body.item);
                 break;
             }
         }
@@ -197,13 +167,8 @@ router.route('/update/note').post((req, res) => {
         //find correct sheet
         for(let i = 0; i < account.sheets.length; i++){
             if(account.sheets[i].name === req.body.sheet.name){
-                //sheet found
-                //type of note
-                if(req.body.type === 'income'){
-                    //find deposit
-                    account.sheets[i].income[req.body.depositIndex].notes[req.body.noteIndex] = req.body.item;
-                    break;
-                }
+                //update note
+                account.sheets[i][req.body.type][req.body.itemIndex].notes[req.body.editIndex] = req.body.item;
             }
         }
 
@@ -222,32 +187,7 @@ router.route('/delete/note').post((req, res) => {
         for(let i = 0; i < account.sheets.length; i++){
             if(account.sheets[i].name === req.body.sheet.name){
                 //sheet found
-                //type of note
-                if(req.body.type === 'income'){
-                    //find deposit
-                    account.sheets[i].income[req.body.depositIndex].notes[req.body.noteIndex] = req.body.item;
-                    break;
-                }
-            }
-        }
-
-        account.markModified("sheets");
-        account.save()
-        .then(() => res.json(account))
-        .catch(err => res.status(400).json('Error: ' + err))
-    })
-});
-
-//delete deposit 
-router.route('/delete/deposit').post((req, res) => {
-    User.findOne({ uid: req.body.uid })
-    .then(account => {
-        //find correct sheet (active)
-        for(let i = 0; i < account.sheets.length; i++){
-            if(account.sheets[i].name === req.body.sheet.name){
-                //sheet found
-                //find deposit
-                account.sheets[i].income.splice(req.body.index, 1);
+                account.sheets[i][req.body.type][req.body.itemIndex].notes.splice(req.body.editIndex, 1);
                 break;
             }
         }
@@ -259,100 +199,24 @@ router.route('/delete/deposit').post((req, res) => {
     })
 });
 
-/*** EXPENSE ***/
-//add expense type
-router.route('/add/expense-type').post((req, res) => {
-    User.findOne({ uid: req.body.uid })
-    .then(account => {
-        account.expenseTypes.push(req.body.type)
-        
-        account.markModified("expenseTypes");
-        account.save()
-        .then(() => res.json(account))
-        .catch(err => res.status(400).json('Error: ' + err))
-    })
-});
-
-//update expense type
-router.route('/update/expense-type').post((req, res) => {
-    User.findOne({ uid: req.body.uid })
-    .then(account => {
-        account.expenseTypes[req.body.index] = req.body.type;
-
-        account.markModified("expenseTypes");
-        account.save()
-        .then(() => res.json(account))
-        .catch(err => res.status(400).json('Error: ' + err))
-    })
-});
-
-//delete expense type
-router.route('/delete/expense-type').post((req, res) => {
-    User.findOne({ uid: req.body.uid })
-    .then(account => {
-        account.expenseTypes.splice(req.body.index, 1);
-
-        account.markModified("expenseTypes");
-        account.save()
-        .then(() => res.json(account))
-        .catch(err => res.status(400).json('Error: ' + err))
-    })
-});
-
-//add expense payee
-router.route('/add/expense-payee').post((req, res) => {
-    User.findOne({ uid: req.body.uid })
-    .then(account => {
-        account.expensePayees.push(req.body.payee);
-
-        account.markModified("expensePayees");
-        account.save()
-        .then(() => res.json(account))
-        .catch(err => res.status(400).json('Error: ' + err))
-    })
-});
-
-//update expense payee
-router.route('/update/expense-payee').post((req, res) => {
-    User.findOne({ uid: req.body.uid })
-    .then(account => {
-        account.expensePayees[req.body.index] = req.body.payee;
-
-        account.markModified("expensePayees");
-        account.save()
-        .then(() => res.json(account))
-        .catch(err => res.status(400).json('Error: ' + err))
-    })
-});
-
-//delete expense payee
-router.route('/delete/expense-payee').post((req, res) => {
-    User.findOne({ uid: req.body.uid })
-    .then(account => {
-        account.expensePayees.splice(req.body.index, 1);
-
-        account.markModified("expensePayees");
-        account.save()
-        .then(() => res.json(account))
-        .catch(err => res.status(400).json('Error: ' + err))
-    })
-});
-
-//add expense
-router.route('/add/expense').post((req, res) => {
+/** SLIPS **/
+//add slip
+router.route('/add/slip').post((req, res) => {
     User.findOne({ uid: req.body.uid })
     .then(account => {
         //find correct sheet
         for(let i = 0; i < account.sheets.length; i++){
             if(account.sheets[i].name === req.body.sheet.name){
-                account.sheets[i].expenses.push({
+                console.log('slip', req.body.slip)
+                console.log('account.sheets[i]', account.sheets[i])
+                account.sheets[i][req.body.slip].push({
                     uid: req.body.uid,
                     postDate: req.body.postDate,
                     type: req.body.type,
                     payee: req.body.payee,
                     dateCreated: req.body.dateCreated,
                     amount: req.body.amount,
-                    note: req.body.note
+                    notes: req.body.note ? [req.body.note] : []
                 })
                 break;
             }
@@ -364,6 +228,50 @@ router.route('/add/expense').post((req, res) => {
         .catch(err => res.status(400).json('Error: ' + err))
     })
 });
+
+//update slip
+router.route('/update/slip').post((req, res) => {
+    User.findOne({ uid: req.body.uid })
+    .then(account => {
+        //find correct sheet
+        for(let i = 0; i < account.sheets.length; i++){
+            if(account.sheets[i].name === req.body.sheet.name){
+                //sheet found
+                //update slip
+                account.sheets[i][req.body.type][req.body.itemIndex] = req.body.slip;
+                break;
+            }
+        }
+
+        account.markModified("sheets");
+        account.save()
+        .then(() => res.json(account))
+        .catch(err => res.status(400).json('Error: ' + err))
+    })
+});
+ 
+//delete slip
+router.route('/delete/slip').post((req, res) => {
+    User.findOne({ uid: req.body.uid })
+    .then(account => {
+        //find correct sheet
+        for(let i = 0; i < account.sheets.length; i++){
+            if(account.sheets[i].name === req.body.sheet.name){
+                //sheet found
+                //find slip
+                account.sheets[i][req.body.type].splice(req.body.index, 1);
+                break;
+            }
+        }
+
+        account.markModified("sheets");
+        account.save()
+        .then(() => res.json(account))
+        .catch(err => res.status(400).json('Error: ' + err))
+    })
+});
+
+
 
 
 module.exports = router;
